@@ -3,13 +3,19 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import date
 from datetime import datetime
 from flask import flash
+from flask_admin import Admin
+from flask_admin.contrib.sqla import ModelView
 
 app = Flask(__name__)
 
-db = SQLAlchemy()
+db = SQLAlchemy(app)
+# db.init_app(app)
 app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://root:@localhost/flask103"
 app.config['SECRET_KEY'] = 'the random string'
-db.init_app(app)
+app.config['FLASK_ADMIN_SWATCH'] = 'cerulean'
+
+admin = Admin(app, name='flask103', template_mode='bootstrap4')
+
 
 class Register(db.Model):
     userid = db.Column(db.Integer, primary_key=True)
@@ -18,9 +24,14 @@ class Register(db.Model):
     createdate = db.Column(db.Date, nullable=False)
     createtime = db.Column(db.Time, nullable=False)
 
+
+admin.add_view(ModelView(Register, db.session))
+
+
 @app.route("/")
 def Login():
     return render_template("index.html")
+
 
 @app.route("/registration", methods=['GET', 'POST'])
 def Registration():
@@ -32,7 +43,8 @@ def Registration():
         now = datetime.now()
         createtime = now.strftime("%H:%M:%S")
         if password == cpassword:
-            obj = Register(name=name, password=password, createdate=createdate, createtime=createtime)
+            obj = Register(name=name, password=password,
+                           createdate=createdate, createtime=createtime)
             db.session.add(obj)
             db.session.commit()
             flash("Registration Successful!")

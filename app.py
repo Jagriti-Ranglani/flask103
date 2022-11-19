@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, session, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from datetime import date
 from datetime import datetime
@@ -18,8 +18,20 @@ class Register(db.Model):
     createdate = db.Column(db.Date, nullable=False)
     createtime = db.Column(db.Time, nullable=False)
 
-@app.route("/")
+@app.route("/", methods=['GET', 'POST'])
 def Login():
+    if "userid" in session:
+        return redirect(url_for("Dashboard"))
+    if request.method == "POST":
+        name = request.form.get('name')
+        password = request.form.get('password')
+        # sql = Register.query.filter_by(name=name, password=password).all()
+        sql = Register.query.filter_by(name=name, password=password)
+        # print(len(sql))
+        if sql.count() > 0:
+            session['userid'] = sql.first().userid
+            # return redirect("/dashboard")
+            return redirect(url_for("Dashboard"))
     return render_template("index.html")
 
 @app.route("/registration", methods=['GET', 'POST'])
@@ -37,3 +49,18 @@ def Registration():
             db.session.commit()
             flash("Registration Successful!")
     return render_template("registration.html")
+
+@app.route("/dashboard")
+def Dashboard():
+    # print(session)
+    if "userid" in session:
+        return render_template("dashboard.html")
+    else:
+        return redirect(url_for("Login"))
+
+@app.route("/logout")
+def Logout():
+    if "userid" in session:
+        session.pop("userid", None)
+    return redirect(url_for("Login"))
+    
